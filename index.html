@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kalkulator Paung — Background Foto (Transparan) + AI Animasi</title>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+
+  <style>
+    /* ---------- VARS ---------- */
+    :root{
+      --bg: linear-gradient(135deg,#f7fbff 0%, #fffaf0 100%);
+      --card-bg: rgba(255,255,255,0.92);
+      --card-glass: rgba(255,255,255,0.60);
+      --panel-glass: rgba(255,255,255,0.56);
+      --primary: #ff7a7a;
+      --secondary: #ffd94a;
+      --accent: #5be4b2;
+      --text: #0b1220;
+      --muted: #5b6770;
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(12,20,30,0.08);
+      --btn-elev: 0 8px 18px rgba(0,0,0,0.08);
+      --ai-size: 64px;
+    }
+
+    /* ---------- BASE ---------- */
+    *{box-sizing:border-box}
+    html,body{height:100%; margin:0; font-family:Poppins,Inter,system-ui; color:var(--text);}
+    body{
+      background: var(--bg);
+      background-attachment: fixed;
+      transition: background .25s ease, color .15s ease;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      position:relative;
+      min-height:100vh;
+    }
+
+    body.with-photo::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.10), rgba(0,0,0,0.06));
+      pointer-events: none;
+      mix-blend-mode: multiply;
+    }
+
+    /* ---------- LAYOUT ---------- */
+    .layout{ width:min(980px,98%); display:grid; grid-template-columns:1fr 420px; gap:22px; align-items:start; z-index:2; position:relative; }
+    .panel, .card {
+      border-radius:var(--radius); padding:18px;
+      border:1px solid rgba(0,0,0,0.04);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+      transition: background .18s ease, box-shadow .18s ease;
+    }
+
+    .panel { background: var(--card-bg); }
+    .card { background: var(--card-bg); }
+
+    body.with-photo .panel { background: var(--panel-glass); box-shadow: 0 8px 26px rgba(2,6,23,0.36); }
+    body.with-photo .card  { background: var(--card-glass);  box-shadow: 0 8px 26px rgba(2,6,23,0.36); }
+
+    /* ---------- LEFT PANEL ---------- */
+    .brand{ display:flex; gap:12px; align-items:center; }
+    .logo{ width:58px;height:58px;border-radius:12px; display:flex;align-items:center;justify-content:center;
+      background: linear-gradient(135deg,var(--primary),var(--accent)); color:white; font-weight:700; font-size:20px; box-shadow: var(--btn-elev); }
+    h1{ margin:0; font-size:18px }
+    .lead{ margin:8px 0 0 0; color:var(--muted); font-size:13px; }
+
+    .controls{ margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .control{ display:flex; gap:8px; align-items:center; background: rgba(255,255,255,0.6); padding:8px; border-radius:10px; border:1px solid rgba(0,0,0,0.03); font-size:13px; }
+    body.with-photo .control { background: rgba(255,255,255,0.34); }
+
+    .control label{ font-size:12px; color:var(--muted); user-select:none; }
+
+    .preset-row{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+    .preset{ padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.04); cursor:pointer; font-size:13px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96)); box-shadow: var(--btn-elev); }
+    body.with-photo .preset { background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.76)); }
+
+    /* ---------- BACKGROUND UPLOAD ---------- */
+    .bg-uploader {
+      margin-top:14px;
+      border-radius:12px;
+      border: 2px dashed rgba(0,0,0,0.06);
+      padding:12px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96));
+    }
+    body.with-photo .bg-uploader { background: rgba(255,255,255,0.38); border-color: rgba(255,255,255,0.08); }
+
+    .u-left { flex:1; }
+    .u-title { font-size:13px; margin:0 0 6px 0; color:var(--muted); }
+    .u-actions { display:flex; gap:8px; align-items:center; margin-top:6px; }
+    .btn { padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.04); cursor:pointer; background:white; font-size:13px; box-shadow: var(--btn-elev); }
+    .btn.warn { background: #ffefef; border-color: rgba(255,0,0,0.06); }
+
+    .preview {
+      width:92px; height:64px; border-radius:8px; overflow:hidden; border:1px solid rgba(0,0,0,0.04);
+      display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,#f8f8f8,#fff);
+    }
+    .preview img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+    .small { font-size:12px; color:var(--muted); }
+
+    /* ---------- CALCULATOR ---------- */
+    .card { display:flex; flex-direction:column; gap:12px; }
+    .display{ border-radius:12px; padding:12px 16px; min-height:72px; display:flex; flex-direction:column; justify-content:center; gap:6px; background:linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.5)); box-shadow: 0 8px 18px rgba(0,0,0,0.04); overflow:hidden; }
+    body.with-photo .display { background: linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0.20)); }
+
+    .exprow{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .expr{ font-family:'Space Mono', monospace; color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .res{ font-size:28px; font-weight:700; color:var(--text); letter-spacing:0.4px; }
+
+    .keys{ display:grid; grid-template-columns: repeat(4,1fr); gap:10px; }
+    button.key{
+      padding:12px 8px; border-radius:12px; border:none; font-size:18px; font-weight:700; cursor:pointer;
+      background: linear-gradient(180deg, #ffffff, #f6f6f6);
+      box-shadow: var(--btn-elev); transition: transform .08s ease, box-shadow .12s;
+      color: var(--text); min-height:44px; display:flex; align-items:center; justify-content:center; gap:6px;
+    }
+    body.with-photo button.key{ background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(250,250,250,0.9)); }
+    button.key:active{ transform: translateY(2px); }
+    button.key:focus{ outline: 3px solid rgba(0,0,0,0.06); outline-offset:2px; }
+
+    button.key.op{
+      background: linear-gradient(180deg, var(--secondary), var(--secondary));
+      color: #1b1b1b;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+    button.key.clear{
+      background: linear-gradient(180deg, #ffdede, #ffecec);
+      color: #6b1b1b;
+    }
+    button.key.enter{
+      grid-column: span 2;
+      background: linear-gradient(135deg,var(--primary),var(--secondary));
+      color:white;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.12);
+    }
+    .zero{ grid-column: span 2; }
+
+    .footer{ display:flex; justify-content:space-between; color:var(--muted); font-size:13px; padding-top:4px; }
+
+    @media (max-width:900px){ .layout{ grid-template-columns:1fr; } .card{ order:-1 } .controls{ justify-content:flex-start } }
+
+    /* ---------- AI ASSISTANT (NEW) ---------- */
+    /* container fixed in bottom-right */
+    .ai-assistant {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      width: var(--ai-size);
+      height: var(--ai-size);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center;
+      pointer-events: auto;
+    }
+
+    /* floating animation */
+    .ai-assistant .float {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: linear-gradient(135deg,#ffffff,#f3f7ff);
+      box-shadow: 0 8px 30px rgba(12,20,40,0.18);
+      transition: transform .18s ease, box-shadow .18s;
+      animation: ai-float 4s ease-in-out infinite;
+      position: relative;
+      overflow: visible;
+      border: 2px solid rgba(255,255,255,0.6);
+      backdrop-filter: blur(4px);
+    }
+
+    @keyframes ai-float {
+      0% { transform: translateY(0) rotate(-2deg); }
+      50% { transform: translateY(-8px) rotate(2deg); }
+      100% { transform: translateY(0) rotate(-2deg); }
+    }
+
+    /* face */
+    .ai-face {
+      width: 66%;
+      height: 66%;
+      display:flex;
+      align-items:center;
+      justify-content:space-around;
+      gap:6px;
+    }
+    .eye {
+      width: 14px;
+      height: 14px;
+      background: #101827;
+      border-radius:50%;
+      position: relative;
+      animation: blink 4s infinite;
+    }
+    @keyframes blink {
+      0%, 4%, 100% { height: 14px; }
+      2% { height: 2px; transform: translateY(6px); }
+    }
+
+    /* mouth a small arc */
+    .mouth {
+      position:absolute;
+      bottom: 10%;
+      left:50%;
+      transform:translateX(-50%);
+      width: 36px;
+      height: 12px;
+      border-radius: 0 0 36px 36px;
+      background: linear-gradient(180deg,#e6eef8,#d6e6ff);
+      box-shadow: inset 0 -4px 6px rgba(0,0,0,0.04);
+      opacity:0.95;
+    }
+
+    /* glow when active */
+    .ai-assistant.active .float {
+      box-shadow: 0 12px 40px rgba(92,120,255,0.22);
+      transform: scale(1.03);
+    }
+
+    /* bubble */
+    .ai-bubble {
+      position: absolute;
+      bottom: calc(var(--ai-size) + 12px);
+      right: 0;
+      transform: translateX(6px);
+      background: rgba(20,20,30,0.95);
+      color: white;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      min-width: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap:8px;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform .18s ease, opacity .18s;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    .ai-assistant.show .ai-bubble { opacity: 1; transform: translateX(0) translateY(-6px); pointer-events: auto; }
+
+    /* thinking dots */
+    .dots { display:flex; gap:6px; align-items:center; }
+    .dot { width:8px; height:8px; background:white; border-radius:50%; opacity:0.85; transform: translateY(0); animation: dot-jump 1s infinite; }
+    .dot:nth-child(2){ animation-delay: 0.15s; }
+    .dot:nth-child(3){ animation-delay: 0.3s; }
+    @keyframes dot-jump {
+      0% { transform: translateY(0); opacity:0.6; }
+      40% { transform: translateY(-6px); opacity:1; }
+      80% { transform: translateY(0); opacity:0.6; }
+      100% { transform: translateY(0); opacity:0.6; }
+    }
+
+    /* small "done" check animation */
+    .ai-done {
+      display:flex; align-items:center; gap:8px; opacity:0; transform: translateY(6px);
+      transition: opacity .12s ease, transform .12s ease;
+    }
+    .ai-assistant.done .ai-bubble .ai-done { opacity:1; transform: translateY(0); }
+    .ai-assistant.done .ai-bubble .dots { opacity:0; }
+
+    /* pointer cursor on assistant */
+    .ai-assistant { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <main class="layout" aria-live="polite">
+    <!-- LEFT PANEL -->
+    <section class="panel" aria-label="kontrol tema & background">
+      <div class="brand">
+        <div class="logo">KP</div>
+        <div>
+          <h1>Kalkulator Paung</h1>
+          <p class="lead">Pilih tema warna dan gunakan foto Anda sebagai latar (preview + simpan otomatis).</p>
+        </div>
+      </div>
+
+      <!-- color pickers -->
+      <div class="controls" id="colorControls">
+        <div class="control"><label for="primary">Primary</label><input id="primary" type="color" value="#ff7a7a" style="margin-left:8px"></div>
+        <div class="control"><label for="secondary">Secondary</label><input id="secondary" type="color" value="#ffd94a" style="margin-left:8px"></div>
+        <div class="control"><label for="accent">Accent</label><input id="accent" type="color" value="#5be4b2" style="margin-left:8px"></div>
+        <div class="control"><label for="bgcolor">Bg</label><input id="bgcolor" type="color" value="#f7fbff" style="margin-left:8px"></div>
+      </div>
+
+      <!-- presets -->
+      <div style="margin-top:12px">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Preset cepat</div>
+        <div class="preset-row">
+          <button class="preset" data-preset='{"primary":"#ff7a7a","secondary":"#ffd94a","accent":"#5be4b2","bg":"linear-gradient(135deg,#f7fbff 0%, #fffaf0 100%)"}'>Cerah</button>
+          <button class="preset" data-preset='{"primary":"#7c5cff","secondary":"#00e7ff","accent":"#ffd166","bg":"linear-gradient(135deg,#0f172a 0%, #071029 100%)"}'>Neon Gelap</button>
+          <button class="preset" data-preset='{"primary":"#6c9ef8","secondary":"#9ee6c6","accent":"#ffd7a8","bg":"linear-gradient(135deg,#f0f8ff 0%, #fffaf2 100%)"}'>Pastel</button>
+          <button class="preset" id="resetPreset">Reset</button>
+        </div>
+      </div>
+
+      <!-- bg uploader -->
+      <div class="bg-uploader" id="uploader" aria-label="upload background">
+        <div class="u-left">
+          <p class="u-title">Custom background (foto)</p>
+          <div class="u-actions">
+            <input id="bgFile" type="file" accept="image/*" style="display:none">
+            <button class="btn" id="btnChoose" type="button">Pilih Foto</button>
+            <button class="btn warn" id="btnRemove" type="button">Hapus Background</button>
+            <span class="small" style="margin-left:6px">atau seret gambar ke sini</span>
+          </div>
+          <p class="small" style="margin-top:8px">Maks 2 MB. Format: .jpg .png .webp</p>
+        </div>
+        <div class="preview" id="preview"><span class="small">Preview</span></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: CALCULATOR -->
+    <section class="card" aria-label="kalkulator">
+      <div class="display" id="display">
+        <div class="exprow">
+          <div class="expr" id="expr">0</div>
+          <div class="res" id="res">0</div>
+        </div>
+      </div>
+
+      <div class="keys" id="keys" role="group" aria-label="tombol kalkulator">
+        <button class="key clear" data-action="clear">C</button>
+        <button class="key" data-action="back">⌫</button>
+        <button class="key op" data-value="%">%</button>
+        <button class="key op" data-value="/">÷</button>
+
+        <button class="key" data-value="7">7</button>
+        <button class="key" data-value="8">8</button>
+        <button class="key" data-value="9">9</button>
+        <button class="key op" data-value="*">×</button>
+
+        <button class="key" data-value="4">4</button>
+        <button class="key" data-value="5">5</button>
+        <button class="key" data-value="6">6</button>
+        <button class="key op" data-value="-">−</button>
+
+        <button class="key" data-value="1">1</button>
+        <button class="key" data-value="2">2</button>
+        <button class="key" data-value="3">3</button>
+        <button class="key op" data-value="+">+</button>
+
+        <button class="key zero" data-value="0">0</button>
+        <button class="key" data-value=".">.</button>
+        <button class="key enter" data-action="equals">=</button>
+      </div>
+
+      <div class="footer">
+        <div id="history">History: —</div>
+        <div style="font-size:13px;color:var(--muted)">Saved theme: <span id="savedLabel">—</span></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- AI assistant widget -->
+  <div class="ai-assistant" id="aiAssistant" aria-hidden="false" title="Asisten AI">
+    <div class="float" id="aiFloat" role="button" tabindex="0" aria-label="Asisten">
+      <div class="ai-face" aria-hidden="true">
+        <div class="eye" style="animation-delay: 0s"></div>
+        <div class="eye" style="animation-delay: 0.2s"></div>
+        <div class="mouth" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="ai-bubble" id="aiBubble" role="status" aria-live="polite">
+      <div class="dots" id="aiDots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+      <div class="ai-done" id="aiDone" style="display:flex; align-items:center;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20 6L9 17l-5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span> Selesai</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================
+       CONFIG & HELPERS
+       ========================= */
+    const THEME_STORAGE = 'calc_theme_v1';
+    const BGIMG_STORAGE = 'calc_bgimg_v1';
+    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
+
+    // DOM refs
+    const primaryEl = document.getElementById('primary');
+    const secondaryEl = document.getElementById('secondary');
+    const accentEl = document.getElementById('accent');
+    const bgcolorEl = document.getElementById('bgcolor');
+    const presets = document.querySelectorAll('.preset');
+    const resetBtn = document.getElementById('resetPreset');
+    const savedLabel = document.getElementById('savedLabel');
+
+    const fileInput = document.getElementById('bgFile');
+    const btnChoose = document.getElementById('btnChoose');
+    const btnRemove = document.getElementById('btnRemove');
+    const uploader = document.getElementById('uploader');
+    const preview = document.getElementById('preview');
+
+    const keys = document.getElementById('keys');
+    const exprEl = document.getElementById('expr');
+    const resEl = document.getElementById('res');
+    const histEl = document.getElementById('history');
+
+    // AI elements
+    const aiAssistant = document.getElementById('aiAssistant');
+    const aiBubble = document.getElementById('aiBubble');
+    const aiDots = document.getElementById('aiDots');
+    const aiDone = document.getElementById('aiDone');
+    const aiFloat = document.getElementById('aiFloat');
+
+    /* =========================
+       THEME + BACKGROUND MANAGEMENT
+       ========================= */
+    function applyTheme(theme){
+      if (theme.primary) document.documentElement.style.setProperty('--primary', theme.primary);
+      if (theme.secondary) document.documentElement.style.setProperty('--secondary', theme.secondary);
+      if (theme.accent) document.documentElement.style.setProperty('--accent', theme.accent);
+      if (theme.bg) {
+        if (theme.bg.startsWith('linear-gradient')) {
+          document.body.style.background = theme.bg;
+        } else {
+          document.body.style.background = `linear-gradient(135deg, ${theme.bg} 0%, #fffaf0 100%)`;
+        }
+      }
+    }
+
+    function saveTheme(name='Custom'){
+      const obj = { primary: primaryEl.value, secondary: secondaryEl.value, accent: accentEl.value, bg: bgcolorEl.value, name };
+      localStorage.setItem(THEME_STORAGE, JSON.stringify(obj));
+      savedLabel.textContent = obj.name;
+    }
+
+    function loadTheme(){
+      try{
+        const raw = localStorage.getItem(THEME_STORAGE);
+        if (!raw) return;
+        const t = JSON.parse(raw);
+        applyTheme({ primary: t.primary, secondary: t.secondary, accent: t.accent, bg: `linear-gradient(135deg, ${t.bg} 0%, #fffaf0 100%)` });
+        if (t.primary && t.primary.startsWith('#')) primaryEl.value = t.primary;
+        if (t.secondary && t.secondary.startsWith('#')) secondaryEl.value = t.secondary;
+        if (t.accent && t.accent.startsWith('#')) accentEl.value = t.accent;
+        if (t.bg && t.bg.startsWith('#')) bgcolorEl.value = t.bg;
+        savedLabel.textContent = t.name || 'Custom';
+      }catch(e){ console.warn('loadTheme failed', e); }
+    }
+
+    // Background image: set as body.style.background with cover
+    function setBackgroundImage(dataUrl){
+      if (!dataUrl){
+        loadTheme();
+        localStorage.removeItem(BGIMG_STORAGE);
+        preview.innerHTML = '<span class="small">Preview</span>';
+        document.body.classList.remove('with-photo');
+        return;
+      }
+      const themeBg = `linear-gradient(135deg, ${bgcolorEl.value || '#f7fbff'} 0%, #fffaf0 100%)`;
+      document.body.style.background = `url("${dataUrl}") center/cover no-repeat, ${themeBg}`;
+      try { localStorage.setItem(BGIMG_STORAGE, dataUrl); } catch(e){ console.warn('Failed save bgimg', e); }
+      preview.innerHTML = '<img alt="preview bg">';
+      preview.querySelector('img').src = dataUrl;
+      document.body.classList.add('with-photo');
+    }
+
+    function loadBackgroundImage(){
+      const data = localStorage.getItem(BGIMG_STORAGE);
+      if (data) { setBackgroundImage(data); }
+    }
+
+    // handle file (validate size & type)
+    function handleFile(file){
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { alert('File bukan gambar!'); return; }
+      if (file.size > MAX_FILE_SIZE) { alert('File terlalu besar (maks 2 MB)'); return; }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        setBackgroundImage(dataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // wire color pickers
+    [primaryEl, secondaryEl, accentEl, bgcolorEl].forEach(el => {
+      el.addEventListener('input', () => {
+        const theme = {
+          primary: primaryEl.value,
+          secondary: secondaryEl.value,
+          accent: accentEl.value,
+          bg: bgcolorEl.value
+        };
+        applyTheme({ ...theme, bg: `linear-gradient(135deg, ${theme.bg} 0%, #fffaf0 100%)` });
+        saveTheme('Custom');
+      });
+    });
+
+    // presets
+    presets.forEach(btn => btn.addEventListener('click', () => {
+      try {
+        const obj = JSON.parse(btn.getAttribute('data-preset'));
+        applyTheme(obj);
+        if (obj.primary && obj.primary.startsWith('#')) primaryEl.value = obj.primary;
+        if (obj.secondary && obj.secondary.startsWith('#')) secondaryEl.value = obj.secondary;
+        if (obj.accent && obj.accent.startsWith('#')) accentEl.value = obj.accent;
+        if (obj.bg && obj.bg.startsWith('#')) bgcolorEl.value = obj.bg;
+        saveTheme(btn.textContent.trim());
+      } catch(e){}
+    }));
+
+    resetBtn.addEventListener('click', () => {
+      localStorage.removeItem(THEME_STORAGE);
+      savedLabel.textContent = '—';
+      localStorage.removeItem(BGIMG_STORAGE);
+      location.reload();
+    });
+
+    // uploader interactions
+    btnChoose.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+    // drag & drop
+    uploader.addEventListener('dragover', (e) => { e.preventDefault(); uploader.style.borderColor = 'rgba(0,0,0,0.12)'; });
+    uploader.addEventListener('dragleave', () => { uploader.style.borderColor = 'rgba(0,0,0,0.06)'; });
+    uploader.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploader.style.borderColor = 'rgba(0,0,0,0.06)';
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) handleFile(f);
+    });
+
+    btnRemove.addEventListener('click', () => {
+      if (!confirm('Hapus background kustom dan kembali ke tema gradien?')) return;
+      localStorage.removeItem(BGIMG_STORAGE);
+      loadTheme();
+      preview.innerHTML = '<span class="small">Preview</span>';
+      document.body.classList.remove('with-photo');
+    });
+
+    // init theme & bg
+    loadTheme();
+    loadBackgroundImage();
+
+    /* =========================
+       AI ANIMATIONS: helper functions
+       - aiShowThinking(): tampilkan bubble thinking
+       - aiShowDone(): tampilkan pesan selesai singkat
+       ========================= */
+    let aiTimer = null;
+    function aiShowThinking() {
+      clearTimeout(aiTimer);
+      aiAssistant.classList.remove('done');
+      aiAssistant.classList.add('show');
+      aiDots.style.display = 'flex';
+      aiDone.style.display = 'none';
+      // activate glow
+      aiAssistant.classList.add('active');
+    }
+
+    function aiShowDone(shortText = 'Selesai') {
+      clearTimeout(aiTimer);
+      aiDots.style.display = 'none';
+      aiDone.style.display = 'flex';
+      // set done text (already "Selesai") — you could change text if needed
+      aiAssistant.classList.add('done');
+      // remove after a moment
+      aiTimer = setTimeout(()=> {
+        aiAssistant.classList.remove('show','active','done');
+      }, 800);
+    }
+
+    // allow clicking assistant to toggle quick info
+    aiAssistant.addEventListener('click', () => {
+      // small pulse
+      aiAssistant.classList.add('active');
+      setTimeout(()=> aiAssistant.classList.remove('active'), 600);
+      // flash bubble with quick tip
+      aiAssistant.classList.add('show');
+      aiDots.style.display = 'none';
+      aiDone.style.display = 'flex';
+      aiDone.querySelector('span').textContent = 'Halo 👋';
+      clearTimeout(aiTimer);
+      aiTimer = setTimeout(()=> {
+        aiAssistant.classList.remove('show','active','done');
+        aiDone.querySelector('span').textContent = ' Selesai';
+      }, 900);
+    });
+
+    /* =========================
+       CALCULATOR LOGIC (fast) - augmented to trigger AI animation
+       ========================= */
+    (function CalcApp(){
+      let current = '';
+      let pending = false;
+
+      function schedule(){
+        if (pending) return;
+        pending = true;
+        requestAnimationFrame(()=> {
+          exprEl.textContent = current || '0';
+          resEl.textContent = previewCompute(current);
+          pending = false;
+        });
+      }
+
+      function previewCompute(s){
+        if (!s) return '0';
+        if (!/^[0-9+\-*/%.() ]+$/.test(s)) return 'Error';
+        let san = s.replace(/×/g,'*').replace(/÷/g,'/');
+        if (/[+\-*/%]$/.test(s)) san = san.slice(0,-1);
+        try {
+          const v = Function('"use strict"; return (' + san + ')')();
+          if (!isFinite(v)) return 'Error';
+          return (Math.round((v + Number.EPSILON) * 1e12)/1e12).toString();
+        } catch { return '0'; }
+      }
+
+      // Modified calculate: animate AI while computing
+      function calculate(){
+        if (!current) return;
+        if (!/^[0-9+\-*/%.() ]+$/.test(current)) { flash(); return; }
+
+        // show AI thinking
+        aiShowThinking();
+
+        // small artificial delay so animation visible (100-350ms) — keeps UX smooth
+        const start = performance.now();
+        setTimeout(()=> {
+          let san = current.replace(/×/g,'*').replace(/÷/g,'/');
+          if (/[+\-*/%]$/.test(san)) san = san.slice(0,-1);
+          try {
+            let res = Function('"use strict"; return (' + san + ')')();
+            if (!isFinite(res)) { flash(); aiShowDone('Err'); return; }
+            res = Math.round((res + Number.EPSILON) * 1e12)/1e12;
+            histEl.textContent = `${current} = ${res}`;
+            current = res.toString();
+            schedule();
+            // show done
+            aiShowDone('Selesai');
+          } catch (e) {
+            flash();
+            aiShowDone('Err');
+          }
+        }, 180); // 180ms delay for "thinking" animation
+      }
+
+      function flash(){
+        const prev = resEl.textContent;
+        resEl.textContent = 'Error';
+        setTimeout(()=> resEl.textContent = previewCompute(current), 700);
+      }
+
+      // pointer delegation
+      keys.addEventListener('pointerdown', (e) => {
+        const btn = e.target.closest('button.key'); if (!btn) return;
+        const action = btn.getAttribute('data-action'); const val = btn.getAttribute('data-value');
+        if (action === 'clear'){ current = ''; schedule(); return; }
+        if (action === 'back'){ current = current.slice(0,-1); schedule(); return; }
+        if (action === 'equals'){ calculate(); return; }
+        if (val){
+          if (val === '.'){
+            const parts = current.split(/[+\-*/%]/); const last = parts[parts.length-1]||'';
+            if (last.includes('.')) return;
+            if (last === '') current += '0';
+          }
+          if (current === '0' && /^[0-9]$/.test(val)) current = val;
+          else {
+            if (/^[+\-*/%]$/.test(val) && current === '' && val !== '-') return;
+            if (/^[+\-*/%]$/.test(val) && /[+\-*/%]$/.test(current)) current = current.slice(0,-1) + val;
+            else current += val;
+          }
+          schedule();
+        }
+      });
+
+      // keyboard
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter'){ e.preventDefault(); calculate(); return; }
+        if (e.key === 'Backspace'){ e.preventDefault(); current = current.slice(0,-1); schedule(); return; }
+        if (e.key === 'Escape'){ e.preventDefault(); current=''; schedule(); return; }
+        if (/^[0-9]$/.test(e.key) || e.key === '.') { handleKey(e.key); return; }
+        if (['+','-','*','/','%'].includes(e.key)) { handleKey(e.key); return; }
+
+        function handleKey(k){
+          if (k === '.'){
+            const parts = current.split(/[+\-*/%]/); const last = parts[parts.length-1]||'';
+            if (last.includes('.')) return;
+            if (last === '') current += '0';
+          }
+          if (current === '0' && /^[0-9]$/.test(k)) current = k;
+          else {
+            if (/^[+\-*/%]$/.test(k) && current === '' && k !== '-') return;
+            if (/^[+\-*/%]$/.test(k) && /[+\-*/%]$/.test(current)) current = current.slice(0,-1) + k;
+            else current += k;
+          }
+          schedule();
+        }
+      });
+
+      // init
+      schedule();
+      // expose for debug if needed
+      window._calc = { getCurrent: ()=> current };
+    })();
+  </script>
+</body>
+</html>
